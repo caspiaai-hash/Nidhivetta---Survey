@@ -1,0 +1,208 @@
+
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>നിധിവേട്ട | Survey</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f4f2fa;font-family:Arial,"Noto Sans Malayalam",sans-serif;color:#211b32}
+.container{max-width:520px;margin:25px auto;padding:18px}
+.card{background:white;border-radius:20px;padding:25px 20px;box-shadow:0 5px 25px #24134a12}
+.logo{text-align:center;font-size:34px;font-weight:800;color:#7138a8;margin:5px}
+.subtitle{text-align:center;color:#777;margin-bottom:25px}
+.progress{height:8px;background:#eee;border-radius:10px;overflow:hidden;margin:18px 0}
+.bar{height:100%;width:0;background:#7138a8;transition:.3s}
+.counter{font-size:13px;color:#777;text-align:right}
+.question{font-size:21px;font-weight:700;line-height:1.7;margin:18px 0}
+.option{display:block;border:1px solid #ddd;border-radius:12px;padding:14px;margin:10px 0;cursor:pointer;font-size:17px}
+.option:has(input:checked){border:2px solid #7138a8;background:#f5effb}
+.option input{margin-right:10px;accent-color:#7138a8}
+button{border:0;border-radius:12px;padding:14px 22px;background:#7138a8;color:white;font-size:17px;font-weight:bold;width:100%;margin-top:18px;cursor:pointer}
+button:disabled{opacity:.5}
+.back{background:#eee;color:#333}
+input[type=tel]{width:100%;padding:15px;border:1px solid #ccc;border-radius:10px;font-size:17px}
+.hidden{display:none}
+.note{text-align:center;color:#777;font-size:13px;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="card">
+<div class="logo">നിധിവേട്ട</div>
+<div class="subtitle">ഒരു പുതിയ അനുഭവത്തിന് നിങ്ങളുടെ അഭിപ്രായങ്ങൾ അറിയാൻ ഞങ്ങൾ ആഗ്രഹിക്കുന്നു.</div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<div class="counter" id="counter"></div>
+<div id="survey"></div>
+<div class="note">നിങ്ങളുടെ അഭിപ്രായങ്ങൾ ഞങ്ങൾക്ക് വിലപ്പെട്ടതാണ്.</div>
+</div>
+</div>
+
+<script>
+const questions = [
+{
+q:"നിങ്ങൾ ഏതെങ്കിലും നറുക്കെടുപ്പുകളിൽ പങ്കെടുത്തിട്ടുണ്ടോ?",
+o:["ഉണ്ട്","ഇല്ല"]
+},
+{
+q:"ഒരു രൂപ പോലും ചിലവില്ലാതെ iPhone 18 Pro, EV സ്കൂട്ടർ, സ്വർണ്ണനാണയം തുടങ്ങിയ സമ്മാനങ്ങൾ സ്വന്തമാക്കാം! ഈ നറുക്കെടുപ്പിൽ പങ്കെടുക്കാൻ നിങ്ങൾക്ക് താല്പര്യമുണ്ടോ?",
+o:["താത്പര്യമുണ്ട്","താത്പര്യമില്ല"]
+},
+{
+q:"നിങ്ങൾ നിലവിൽ ഏത് ജില്ലയിൽ ആണ് താമസം?",
+o:["തിരുവനന്തപുരം","കൊല്ലം","പത്തനംതിട്ട","ആലപ്പുഴ","കോട്ടയം","ഇടുക്കി","എറണാകുളം","തൃശ്ശൂർ","പാലക്കാട്","മലപ്പുറം","കോഴിക്കോട്","വയനാട്","കണ്ണൂർ","കാസർഗോഡ്"]
+},
+{
+q:"പ്രായം",
+o:["18 വയസ്സിൽ താഴെ","18 മുതൽ 25 വരെ","26 മുതൽ 45 വരെ","46 ൽ കൂടുതൽ"]
+},
+{
+q:"ലിംഗവിഭാഗം",
+o:["പുരുഷൻ","സ്ത്രീ","ഭിന്നലിംഗം"]
+},
+{
+q:"ഗെയിമിൻ്റെ ഭാഗമായി കോഴിക്കോട് നഗരപരിധിയിൽ ഉള്ള കുറച്ച് ഷോപ്പുകൾ സന്ദർശിക്കാൻ തയ്യാറാണോ?",
+o:["ആണ്","അല്ല"]
+},
+{
+q:"ഏത് സമ്മാനത്തോടാണ് നിങ്ങൾക്ക് താല്പര്യം?",
+o:["ഐഫോൺ 18 പ്രോ","ഇലക്ട്രിക് സ്കൂട്ടർ","സ്വർണ്ണ നാണയം","ടൂർ ട്രിപ്പ്","മറ്റു സമ്മാനങ്ങൾ"]
+},
+{
+q:"നിങ്ങളുടെ സുഹൃത്തുക്കളെ ഈ ഗെയിമിൽ പങ്കെടുക്കാൻ ക്ഷണിക്കുമോ?",
+o:["ക്ഷണിക്കും","ക്ഷണിക്കില്ല","ഇപ്പൊൾ പറയാൻ സാധിക്കില്ല"]
+},
+{
+q:"നിധിവേട്ട ആരംഭിക്കുമ്പോൾ പങ്കെടുക്കാൻ താൽപര്യമുള്ളവരാണോ?",
+o:["താൽപര്യം ഉണ്ട്","താൽപര്യം ഇല്ല","ഇപ്പൊൾ പറയാൻ കഴിയില്ല"]
+},
+{
+q:"പങ്കെടുക്കാതിരിക്കാൻ എന്തെങ്കിലും കാരണം തോന്നുന്നുണ്ടോ?",
+o:["പങ്കെടുക്കും","സമയക്കുറവ്","ഷോപ്പുകൾ സന്ദർശിക്കുക","മറ്റു കാരണങ്ങൾ"],
+multi:true
+},
+{
+q:"നിധിവേട്ട തുടങ്ങുമ്പോൾ അറിയിപ്പ് ലഭിക്കാൻ താത്പര്യമുണ്ടെങ്കിൽ നിങ്ങളുടെ വാട്സ്ആപ്പ് നമ്പർ നൽകാം (ഓപ്ഷണൽ)",
+phone:true
+}
+];
+
+let current=0;
+let answers={};
+let finishedEarly=false;
+
+const survey=document.getElementById("survey");
+const bar=document.getElementById("bar");
+const counter=document.getElementById("counter");
+
+function render(){
+  const q=questions[current];
+  counter.textContent="ചോദ്യം "+(current+1)+" / 11";
+  bar.style.width=((current+1)/11*100)+"%";
+
+  let html='<div class="question">'+q.q+'</div>';
+
+  if(q.phone){
+    html+='<input type="tel" id="phone" maxlength="15" placeholder="WhatsApp നമ്പർ (ഓപ്ഷണൽ)" value="'+(answers[current]||'')+'">';
+  }else{
+    q.o.forEach((option,i)=>{
+      const type=q.multi?'checkbox':'radio';
+      const checked=q.multi
+        ? (answers[current]||[]).includes(option)
+        : answers[current]===option;
+      html+='<label class="option"><input type="'+type+'" name="answer" value="'+option+'" '+(checked?'checked':'')+'> '+option+'</label>';
+    });
+  }
+
+  if(current>0) html+='<button class="back" onclick="previous()">പിന്നിലേക്ക്</button>';
+  html+='<button onclick="next()">'+(current===10?'തുടരുക':'അടുത്തത്')+'</button>';
+  survey.innerHTML=html;
+}
+
+function next(){
+  const q=questions[current];
+
+  if(q.phone){
+    const phone=document.getElementById("phone").value.trim();
+    if(phone && !/^[0-9+\-\s]{7,15}$/.test(phone)){
+      alert("ശരിയായ WhatsApp നമ്പർ നൽകുക.");
+      return;
+    }
+    answers[current]=phone;
+    showFinal();
+    return;
+  }
+
+  const selected=[...document.querySelectorAll('input[name="answer"]:checked')].map(x=>x.value);
+
+  if(selected.length===0){
+    alert("ദയവായി ഒരു ഉത്തരം തിരഞ്ഞെടുക്കുക.");
+    return;
+  }
+
+  answers[current]=q.multi?selected:selected[0];
+
+  if(current===1 && answers[1]==="താത്പര്യമില്ല"){
+    finishedEarly=true;
+    showFinal();
+    return;
+  }
+
+  current++;
+  render();
+}
+
+function previous(){
+  if(current>0){
+    current--;
+    render();
+  }
+}
+
+function showFinal(){
+  counter.textContent="സർവേ പൂർത്തിയാക്കുക";
+  bar.style.width="100%";
+
+  survey.innerHTML=`
+    <div class="question" style="text-align:center">
+    ${finishedEarly
+      ?"നിങ്ങളുടെ വിലപ്പെട്ട സമയം ഞങ്ങൾക്കായി മാറ്റിവെച്ചതിന് നന്ദി."
+      :"നിധിവേട്ട സർവേയിൽ പങ്കെടുത്തതിന് നന്ദി. നിങ്ങളുടെ അഭിപ്രായങ്ങൾ ഞങ്ങൾക്ക് വിലപ്പെട്ടതാണ്. നിങ്ങളുടെ പ്രതികരണം വിജയകരമായി രേഖപ്പെടുത്താൻ താഴെയുള്ള ബട്ടൺ അമർത്തുക."}
+    </div>
+    <button onclick="submitSurvey()">സമർപ്പിക്കുക</button>
+  `;
+}
+
+async function submitSurvey(){
+  const response={
+    response_id:crypto.randomUUID(),
+    answers:answers,
+    whatsapp_number:answers[10]||null,
+    submitted_at:new Date().toISOString()
+  };
+
+  // Supabase ബന്ധിപ്പിക്കുന്നതിനുള്ള ഭാഗം അടുത്ത ഘട്ടത്തിൽ ചേർക്കും.
+  // ഇപ്പോൾ പ്രതികരണം ഈ ഉപകരണത്തിൽ മാത്രം താൽക്കാലികമായി സൂക്ഷിക്കുന്നു.
+  try{
+    const saved=JSON.parse(localStorage.getItem("nidhivetta_responses")||"[]");
+    saved.push(response);
+    localStorage.setItem("nidhivetta_responses",JSON.stringify(saved));
+
+    survey.innerHTML=`
+      <div class="question" style="text-align:center">
+      നന്ദി! നിങ്ങളുടെ പ്രതികരണം ഈ ഉപകരണത്തിൽ രേഖപ്പെടുത്തി.
+      </div>
+      <p style="text-align:center">Response ID: ${response.response_id}</p>
+    `;
+    counter.textContent="പൂർത്തിയായി";
+    bar.style.width="100%";
+  }catch(e){
+    alert("പ്രതികരണം രേഖപ്പെടുത്താൻ കഴിഞ്ഞില്ല. വീണ്ടും ശ്രമിക്കുക.");
+  }
+}
+
+render();
+</script>
+</body>
+</html>
