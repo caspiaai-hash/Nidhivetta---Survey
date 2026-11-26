@@ -40,6 +40,10 @@ input[type=tel]{width:100%;padding:15px;border:1px solid #ccc;border-radius:10px
 </div>
 
 <script>
+// SUPABASE CONNECTION
+const SUPABASE_URL = "https://emebrboptdextdgjprbp.supabase.co";
+const SUPABASE_KEY = "sb_publishable_sSBPD4HvSluAKBZ6dOaNYA_Viyf5zsC";
+
 const questions = [
 {
 q:"നിങ്ങൾ ഏതെങ്കിലും നറുക്കെടുപ്പുകളിൽ പങ്കെടുത്തിട്ടുണ്ടോ?",
@@ -91,6 +95,7 @@ phone:true
 let current=0;
 let answers={};
 let finishedEarly=false;
+let submitting=false;
 
 const survey=document.getElementById("survey");
 const bar=document.getElementById("bar");
@@ -106,7 +111,7 @@ function render(){
   if(q.phone){
     html+='<input type="tel" id="phone" maxlength="15" placeholder="WhatsApp നമ്പർ (ഓപ്ഷണൽ)" value="'+(answers[current]||'')+'">';
   }else{
-    q.o.forEach((option,i)=>{
+    q.o.forEach((option)=>{
       const type=q.multi?'checkbox':'radio';
       const checked=q.multi
         ? (answers[current]||[]).includes(option)
@@ -170,35 +175,76 @@ function showFinal(){
       ?"നിങ്ങളുടെ വിലപ്പെട്ട സമയം ഞങ്ങൾക്കായി മാറ്റിവെച്ചതിന് നന്ദി."
       :"നിധിവേട്ട സർവേയിൽ പങ്കെടുത്തതിന് നന്ദി. നിങ്ങളുടെ അഭിപ്രായങ്ങൾ ഞങ്ങൾക്ക് വിലപ്പെട്ടതാണ്. നിങ്ങളുടെ പ്രതികരണം വിജയകരമായി രേഖപ്പെടുത്താൻ താഴെയുള്ള ബട്ടൺ അമർത്തുക."}
     </div>
-    <button onclick="submitSurvey()">സമർപ്പിക്കുക</button>
+    <button id="submitButton" onclick="submitSurvey()">സമർപ്പിക്കുക</button>
+    <p id="errorMessage" style="color:#c00;text-align:center"></p>
   `;
 }
 
 async function submitSurvey(){
+  if(submitting) return;
+
+  submitting=true;
+  const button=document.getElementById("submitButton");
+  const errorMessage=document.getElementById("errorMessage");
+
+  button.disabled=true;
+  button.textContent="സമർപ്പിക്കുന്നു...";
+
+  const responseId=crypto.randomUUID();
+
+  // Supabase table columns-നോട് യോജിക്കുന്ന ഡാറ്റ
   const response={
-    response_id:crypto.randomUUID(),
-    answers:answers,
-    whatsapp_number:answers[10]||null,
-    submitted_at:new Date().toISOString()
+    id:responseId,
+    q1_raffle_participation:answers[0],
+    q2_interest:answers[1],
+    q3_district:answers[2]||null,
+    q4_age:answers[3]||null,
+    q5_gender:answers[4]||null,
+    q6_shop_visit:answers[5]||null,
+    q7_prize_interest:answers[6]||null,
+    q8_invite_friends:answers[7]||null,
+    q9_future_interest:answers[8]||null,
+    q10_reasons:answers[9]||null,
+    q11_whatsapp:answers[10]||null
   };
 
-  // Supabase ബന്ധിപ്പിക്കുന്നതിനുള്ള ഭാഗം അടുത്ത ഘട്ടത്തിൽ ചേർക്കും.
-  // ഇപ്പോൾ പ്രതികരണം ഈ ഉപകരണത്തിൽ മാത്രം താൽക്കാലികമായി സൂക്ഷിക്കുന്നു.
   try{
-    const saved=JSON.parse(localStorage.getItem("nidhivetta_responses")||"[]");
-    saved.push(response);
-    localStorage.setItem("nidhivetta_responses",JSON.stringify(saved));
+    const result=await fetch(
+      SUPABASE_URL+"/rest/v1/survey_responses",
+      {
+        method:"POST",
+        headers:{
+          "apikey":SUPABASE_KEY,
+          "Authorization":"Bearer "+SUPABASE_KEY,
+          "Content-Type":"application/json",
+          "Prefer":"return=minimal"
+        },
+        body:JSON.stringify(response)
+      }
+    );
+
+    if(!result.ok){
+      const errorText=await result.text();
+      throw new Error(errorText);
+    }
 
     survey.innerHTML=`
       <div class="question" style="text-align:center">
-      നന്ദി! നിങ്ങളുടെ പ്രതികരണം ഈ ഉപകരണത്തിൽ രേഖപ്പെടുത്തി.
+      നന്ദി! നിങ്ങളുടെ പ്രതികരണം വിജയകരമായി രേഖപ്പെടുത്തി.
       </div>
-      <p style="text-align:center">Response ID: ${response.response_id}</p>
+      <p style="text-align:center">Response ID:</p>
+      <p style="text-align:center;word-break:break-all">${responseId}</p>
     `;
+
     counter.textContent="പൂർത്തിയായി";
     bar.style.width="100%";
-  }catch(e){
-    alert("പ്രതികരണം രേഖപ്പെടുത്താൻ കഴിഞ്ഞില്ല. വീണ്ടും ശ്രമിക്കുക.");
+
+  }catch(error){
+    console.error("Supabase error:",error);
+    errorMessage.textContent="പ്രതികരണം സേവ് ചെയ്യാൻ കഴിഞ്ഞില്ല. ഇന്റർനെറ്റ് പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.";
+    button.disabled=false;
+    button.textContent="വീണ്ടും ശ്രമിക്കുക";
+    submitting=false;
   }
 }
 
